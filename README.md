@@ -22,7 +22,3 @@ Matlab Code for "Fast networked data selection via distributed smoothed quantile
 - DistributedQuantileEstimation_EXTRA_MultNum.m: Distributed top-k selection via EXTRA for multiple data points within each node
 - DistributedQuantileEstimation_SGD.m: Distributed top-k selection via DGD for single data point within each node
 - DistributedQuantileEstimation_SGD_MultNum.m: Distributed top-k selection via DGD for multiple data points within each node
-
-## Communication cost
-- Traffic_EXTRA.m: Communication cost for distributed top-k selection via EXTRA
-- Traffic_STopK.m: Communication cost for distributed top-k selection via STopK
