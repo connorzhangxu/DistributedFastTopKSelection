@@ -1,0 +1,79 @@
+%% Distributed smoothed quantile inference 
+
+clc
+clear
+close all
+addpath(genpath('./utils/'));
+addpath(genpath('./algorithms/'));
+addpath(genpath('./data/'));
+
+
+N=100; % Number of nodes
+n_iteration=1e4; % Maximum iteration
+
+%% set random seed
+seed=100;
+rng(seed);
+
+%% generate signal with resolution delta
+Delta = 0.1;
+x=round(randn(N,1)/Delta)*Delta;
+
+%% generate Erdo Renyi random graph
+NumEdges=6*N;
+[A]=RandomGraphGeneration(N,NumEdges);
+% figure
+% plot(graph(A))
+% diameter
+dmax=max(sum(A));
+D=diag(sum(A));
+L=D-A;
+lambda=svd(L);
+
+%% Main program
+tau1=0;
+tau2=0;
+alpha0=0.05*Delta;
+beta0=2/(lambda(1)+lambda(N-1));
+k=round(N*0.3);
+p=(N-k+0.5)/N;
+[y,~]=sort(x,'descend');
+m_over=k-sum(x>y(k));
+m_under=N-k-sum(x<y(k));
+gm=min(m_over-0.5,m_under+0.5);
+W=eye(N)-beta0*L;
+Sigma=svd(W);
+
+% loss='l2';
+% loss='l1';
+loss='inf';
+% smooth='Nesterov';
+smooth='Convolution';
+
+Error_Q1=DistributedQuantileEstimation_SGD(x,p,A,alpha0,beta0,tau1,tau2,n_iteration,Delta,loss);
+h=Delta*0.3;
+Error_Q2=DistributedQuantileEstimation_EXTRA(x,p,A,beta0,h,n_iteration,Delta,loss,smooth);
+
+%% Plot
+figure
+X=round(logspace(0,4,50));
+loglog(X,Error_Q1(X),'-^','linewidth',2)
+hold on
+loglog(X,Error_Q2(X),'-s','linewidth',2)
+loglog([1:n_iteration],Delta/2*ones(n_iteration,1),'k-','linewidth',1.5)
+
+legend('DGD','EXTRA','LineWidth',1.5)
+xlabel('$t$','interpreter','latex')
+
+if strcmp(loss,'l2')
+    ylabel('$\|\mathbf{w}^t - \theta_k \mathbf{1}\|_{2}^2/N$','interpreter','latex')
+elseif strcmp(loss,'max')
+    ylabel('$\|\mathbf{w}^t - \theta_k \mathbf{1}\|_{\infty}$','interpreter','latex')
+elseif strcmp(loss,'l1')
+    ylabel('$\|\mathbf{w}^t - \theta_k \mathbf{1}\|_{1}/N$','interpreter','latex')
+end
+
+set(gcf, 'PaperPositionMode', 'manual');
+set(gcf, 'PaperUnits', 'inches');
+set(gcf, 'PaperPosition', [0 0 6 4.5]);
+set(gca,'FontName','times new roman','FontSize',16,'Layer','top','LineWidth',2);
